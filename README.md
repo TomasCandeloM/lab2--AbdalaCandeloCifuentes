@@ -1,4 +1,4 @@
-# Laboratorio #1 - Administración de Redes 
+# Laboratorio #2 - Administración de Redes 
 ## Juan José Cifuentes Cuellar
 ## Tomas Candelo Montoya
 ## Carlos Farouk Abdalá Rincón 
@@ -38,9 +38,9 @@ La red empresarial cuenta con un total de 5 espacios de red
 
 Para el proceso de subneteo en las redes IPv6 no se tiene informacion de cuantos host se necesitan por cada subred por lo que su proceso de subneteo se basa en que estamos buscando direcciones con un inteface ID de longitud 64, mientras que para el subneteo del espacio IPv4 se tiene en cuenta que necesitamos 2 host por cada subred (conexion entre routers) y se tiene un total de 5 conexiónes. 
 
-**Subneteo de la intranet de INTRANETotá**
+**Subneteo de la intranet de INTRANET Bogootá**
 
-![SUBNETEO DE LA INTRANET DE INTRANETOTÁ](/image/Subneto_inteNet_INTRANET.png)
+![SUBNETEO DE LA INTRANET DE INTRANETOTÁ](/image/Subneto_inteNet_Bog.png)
 
 **Subneteo de la intranet de Madrid**
 
@@ -185,3 +185,58 @@ Building configuration...
 [OK]
 ```
 
+**Routers:**
+
+Para la configuración de las VLAN, el primer paso es encender la interfaz conectada a la intranet.
+```
+R1_Bog(config)#interface fa0/1
+R1_Bog(config-if)#no shutdown
+R1_Bog(config-if)#exit
+```
+
+Ahora vamos a crear y a configurar las subinterfaces en los routers que conectan con la intranet, en cada router configuramos una subinterfaz por cada una de las vlans necesarias, a estas se les asigan la encapsulación, recordar que la vlan 99 en el caso de Bogotá y la 1 en el caso de Madrid se debe especificar que son nativas
+
+```
+R1_Bog(config)#interface fa0/1.50
+R1_Bog(config-if)#encapsulation dot1q 50
+R1_Bog(config-if)#ipv6 address 2001:1200:A1:2::1/64
+R1_Bog(config-if)#interface fa0/1.100
+R1_Bog(config-if)#encapsulation dot1q 100
+R1_Bog(config-if)#ipv6 address 2001:1200:A1:3::1/64
+R1_Bog(config-if)#interface fa0/1.99
+R1_Bog(config-if)#encapsulation dot1q 99 native
+R1_Bog(config-if)#ipv6 address 2001:1200:A1:1::1/64
+```
+
+**Router como proveedor DHCP:**
+
+Para las dos intranets de nuestra re empresarial, utilizamos un protocolo de direccionamiento dinamico para que los host obtengan su dirección IPv6, para este laboratorio utilizamos el protocolo SLACC con DHCPv6, para esto primero necesitamos configurar una pool en el router la cual tiene almacenada la dirección IPv6 del servidor DNS
+
+```
+R1_Bog(config)#ipv6 dhcp pool bogota
+R1_Bog(config-dhcpv6)#address prefix 2001:1200:A1::/48 48
+R1_Bog(config-dhcpv6)#dns-server 2001:1200:C1:1::3
+```
+
+Con la pool creada lo unico que tenmos que hace es entrar a cada una de las interfaces fastEthernet que estan en uso en el router, tanto las interfaces globales, como a las subinterfaces, y una vez dentro de las interfaces habilitamos que estas puedan acceder a la pool creada, ademas ingresamos un comando para modificar el valor de la other flag que envia el router, valor que tiene que estar en 1 para que los host sepan que el protocolo que deben usar es el ya mencionado 
+
+```
+R1_Bog(config)#inteface fa0/1
+R1_Bog(config-if)#ipv6 dhcp server bogota
+R1_Bog(config-if)#ipv6 nd other-config-flag
+R1_Bog(config-if)#exit
+R1_Bog(config)#inteface fa0/1.50
+R1_Bog(config-if)#ipv6 dhcp server bogota
+R1_Bog(config-if)#ipv6 nd other-config-flag
+R1_Bog(config-if)#exit
+R1_Bog(config)#inteface fa0/1.100
+R1_Bog(config-if)#ipv6 dhcp server bogota
+R1_Bog(config-if)#ipv6 nd other-config-flag
+R1_Bog(config-if)#exit
+R1_Bog(config)#inteface fa0/1.99
+R1_Bog(config-if)#ipv6 dhcp server bogota
+R1_Bog(config-if)#ipv6 nd other-config-flag
+R1_Bog(config-if)#exit
+```
+
+Con estos comandos es suficiente para que los host puedan obtener su dirección IPV6 por medio de SLACC usando su dirección MAC para generar automaticamente su identificador de interfaz y puede acceder al servicio DHCP v6 para obtener la información sobre el servidor DNS al que debe acceder 
