@@ -1,44 +1,114 @@
 # Laboratorio #2 - Administración de Redes 
-## Juan José Cifuentes Cuellar
-## Tomas Candelo Montoya
-## Carlos Farouk Abdalá Rincón 
+## Integrantes
+>Juan José Cifuentes Cuellar
+>
+>Tomas Candelo Montoya
+>
+>Carlos Farouk Abdalá Rincón 
 
+****
 # Planificación
+Para el desarrollo del proyecto, en un primer lugar tuvimos que realizar una labor de planeación en la que definiríamos todos los parámetros generales de la red a fin de facilitar el desarrollo más adelante. Para ello, y en primer lugar, decidimos guiarnos por las preguntas planteadas por los desafíos asignados a lo largo del corte para definir las generalidades del direccionamiento y enrutamiento requeridos. Las preguntas se encuentran a continuación.
+
 ## Preguntas
 
-**¿Cuántas subredes se necesitan?**  
+- **¿Cuántas subredes se necesitan?**  
 
-**¿Cuántos host/interfaces necesita la subred, y que dispositivos se encuentran en ella?**  
+Cada uno de los espacios de direccionamiento que nos dan tiene un número diferente de subredes necesarias, pero las generalidades son las siguientes:
 
-**¿Qué partes de la red utilizan direcciones publicas y que partes direcciones privadas?**    
+• Las dos redes correspondientes a las Intranets necesitan un total de **3** subredes: 2 para las VLANs productivas y 1 para la VLAN troncal.
 
-**¿Dónde deberían estar conservadas estas direcciones?** 
+• La red definida para la conexión DMZ e ISP en Bogotá necesita **2** subredes: 1 correspondiente al link que tiene el router de la intranet con su respectivo ISP y otra para la red demilitarizada.
 
-**¿Se requiere una asignación dinámica y/o estática? ¿Donde?**
+• La red definida para la conexión ISP en Madrid solo necesita **1** subred: La subred necesaria para el link entre el router de la intranet y el ISP en Madrid.
 
-**¿En que terminal se configuraron los servicios requeridos?**
+• La red disponible para las direcciones loopback tan solo necesita **1** subred capaz de dar una dirección a todos los routers de la topología.
 
-**¿Qué servicio de IPv4 se debe configurar para para limitar el acceso al servidor web por el puerto 80 y 443 en las vlans especificas?**
+• La red IPv4 definida para el Internet necesita de un total de **5** subredes, cada una asignada a los diferentes links que se crean entre los routers.
 
-**¿En que interfaces se deben configurar las OSPF o EIGRP (no RIP) y/o rutas estáticas?**
+- **¿Cuántos host/interfaces necesita cada subred?** 
+
+Gracias a que la gran mayoría de estos espacios son IPv6, no tenemos que preocuparnos por ello, puesto que todas las redes tendrán el mismo tamaño de 2^64 hosts, permitiendonos ignorar por completo este requisito.
+
+Sin embargo, para las redes IPv4 que tenemos que calcular, si es importante mencionar que cada una necesita un mínimo de **2** hosts, uno por cada interfaz de la conexión montada.
+
+- **¿Qué dispositivos se encuentran en cada subred?**
+
+La disposición de los dispositivos en las diferentes subredes es la siguiente:
+
+• Los PC1-4, los Switches_Intranet1-3 y la interfaz del R1_BOG que se conecta a ellos pertenecen a las diferentes VLANs de la Intranet Bogotá, con los dispositivos intermedios en la VLAN 99 y los hosts en las diferentes VLANs funcionales según lo indicado en la guía (50 y 100).
+
+• Los PC5-8, los Switches_Intranet4-5, el Multilayer-Switch0 y la interfaz del R2_ESP que se conecta a ellos pertenecen a las diferentes VLANs de la Intranet Madrid, con los dispositivos intermedios en la VLAN 1 y los hosts en las diferentes VLANs funcionales según lo indicado en la guía (25 y 100).
+
+• Los servidores Web y DNS, el Switch_DMZ y la interfaz del R1_BOG que se conecta a ellos pertenecen a la subred DMZ.
+
+• Las conexiones generadas entre los R1_BOG y R2_ESP y sus respectivos ISP pertenecen cada una a las subredes alocadas a esta función.
+
+• Los routers que componen el Internet, es decir, ISP_FL, ISP_NET y las interfaces correspondientes de ISP_ESP e ISP_BOG pertenecen a las diferentes subredes IPv4 preparadas para cada una de sus diferentes conexiones.
+
+- **¿Qué partes de la red utilizan direcciones publicas y que partes direcciones privadas?**  
+
+Una vez más, esta pregunta deja de tener sentido cuando hablamos de direccionamiento IPv6, pues esta distinción ya no es necesario a fin de ahorrar en número de direcciones disponibles. Si entendemos esta distinción sin embargo como que partes de la red necesitan una dirección GUA o LLA, entonces nos encontramos con que todos los dispositivos e interfaces que funcionen con el protocolo IPv6 utilizan tanto "públicas" como "privadas".
+
+En cuanto al direccionamiento que ocurre con IPv4, todas las conexiones son de tipo público, pues se refieren a aquellas redes que componen la parte pública del Internet, sin llegar a entrar a una LAN en ningún momento.
+
+- **¿Dónde deberían estar conservadas estas direcciones?** 
+
+Los servidores Web y DNS, Switches de las intranets (incluyendo el MLSW) y Routers deberían mantener siempre sus direcciones de forma estática, para no generar problemas con las puertas de enlace (routers), para permitir que todos los hosts puedan acceder a los diferentes servicios de la red de forma confiable (servers) y para mantener un sistema organizado respecto al ruteo de las VLANs truncales 99 y 1 (switches).
+
+Los PC pueden cambiar de dirección en cualquier momento, pues esto no afecta el funcionamiento de la red.
+
+- **¿Se requiere una asignación dinámica y/o estática? ¿Dónde?**
+
+En base a lo anterior, podemos ver que los dispositivos intermedios requieren de una asignación de IP estática, mientras que los dispositivos hosts, como los PC, requieren de una asignación dinámica. Este direccionamiento dinámico será de tipo stateless DHCPv6 por razones que trataremos más adelante.
+
+- **¿En que terminal se configuraron los servicios requeridos?**
+
+Los servicios de direccionamiento dinámico se configuraron en las interfaces de los routers R1_BOG y R2_ESP conectadas a sus respectivas intranets, puesto que son solo los PC quienes necesitan de este servicio.
+
+- **¿Qué servicio de IPv6 se debe configurar para para limitar el acceso al servidor web por el puerto 80 y 443 en las vlans especificas?**
+
+Se debe utilizar algún servicio de filtrado de paquetes. Por razones que discutiremos más adelante, el servicio escogido fue el de Access List, aunque vale la pena mencionar que se configuró en su versión IPv6, no IPv4. Esto debido a que la parte de la red con direccionamiento IPv4 no tiene ningún host al que denegar el acceso al servidor Web.
+
+- **¿Dónde se deben ubicar los ACLs?**
+
+La forma en la que planteamos nuestra solución requiere que las Access Lists se apliquen en las interfaces de salida de los routers conectados a cada intranet, es decir, en la interfaz FastEthernet0/0 del R1_BOG y en la interfaz Serial0/0/0 del R2_ESP
+
+- **¿En qué interfaces se deben configurar OSPF o EIGRP (no RIP) y/o rutas estáticas y redistribución entre protocolos?**
+
+Gracias a que la topología nos especifica las diferentes partes de la red en las que se deben aplicar los diferentes protocolos de enrutamiento, es fácil identificar las interfaces que requiere cada protocolo. Solo hay una conexión que queda a elección nuestra, y esta es la conección entre ISP_FL e ISP_NET, la cual terminamos eligiendo seria EIGRP.
+
+• La interfaz serial del R1_BOG y la interfaz a la que se conecta en el ISP_BOG llevan el protocolo OSPFv3.
+
+• La interfaz serial del R2_ESP y la interfaz a la que se conecta en el ISP_ESP llevan el protocolo EIGRPv6.
+
+• Las interfaces del ISP_FL en su totalidad y las interfaces a las que se conecta en el ISP_BOG, ISP_ESP e ISP_NET llevan el protocolo EIGRP.
+
+• Las interfaces del ISP_BOG e ISP_ESP que conectan al ISP_NET junto a las respectvas interfaces a las que se conectan llevan el protocolo OSPF.
+
+Ahora bien, para la redistribución entre protocolos nos limitamos únicamente a aquellos routers que comparten más de un 
+
+- **¿Qué servicio(s) de migración se debe(n) implementar para permitir el acceso al servidor Web instalado en el DMZ configurado completamente en IPv6?**
+
+Para el desarrollo de este proyecto decidimos utilizar el servicio de migración Tunneling, por lo que creamos un tunel virtual entre los routers ISP. Vale la pena mencionar que para el funcionamiento de este decidimos aprovecharnos del tamaño reducido del laboratorio y utilizar enrutamiento estático a fin de que funcionara esta conexión.
 
 ## Subneteo
 
-La red empresarial cuenta con un total de 5 espacios de red
+La red empresarial cuenta con un total de 5 espacios de red, cuyas generalidades ya mencionamos anteriormente. En concreto, cada uno de los espacios de direccionamiento consiste de_
 
-• La intranet de INTRANETotá 2001:1200:A1::/48 para un total de 3 vlans (50 Ing, 100 Tech, 99 native)
+• La intranet de Bogotá 2001:1200:A1::/48 para un total de 3 vlans (50 Ing, 100 Tech, 99 native)
 
 • La intranet de Madrid 2001:1200:B1::/48 para un total de 3 vlans (25 Tesoreria, 100 Vice, 1 native)
 
-• La Conexión del Router de INTRANETotá con el ISP de la misma ciudad y el espacio DMZ de la red (que cuenta con un total de 6 ) 2001:1200:C1::/48 
+• La Conexión del Router de INTRANET Bogotá con el ISP de la misma ciudad y el espacio DMZ de la red (que cuenta con un total de 6 ) 2001:1200:C1::/48 
 
-• La Conexión del Router de España con el ISP del mismo pais 2001:1200:D1::/48 
+• La Conexión del Router de INTRANET España con el ISP del mismo pais 2001:1200:D1::/48 
 
-• Las Conexiones entre los routers que hacen parte del espacio de internet, este espacio de direcciones a diferencia de los cuatro anteriores es un espacio Ipv4 con el siguiente espacio de red 190.85.201.0/24
+• Las Conexiones entre los routers que hacen parte del espacio de internet, este espacio de direcciones a diferencia de los cuatro anteriores es un espacio IPv4, con el siguiente rango de red 190.85.201.0/24
 
 Para el proceso de subneteo en las redes IPv6 no se tiene informacion de cuantos host se necesitan por cada subred por lo que su proceso de subneteo se basa en que estamos buscando direcciones con un inteface ID de longitud 64, mientras que para el subneteo del espacio IPv4 se tiene en cuenta que necesitamos 2 host por cada subred (conexion entre routers) y se tiene un total de 5 conexiónes. 
 
-**Subneteo de la intranet de INTRANET Bogootá**
+**Subneteo de la intranet de INTRANET Bogotá**
 
 ![SUBNETEO DE LA INTRANET DE INTRANETOTÁ](/image/Subneto_inteNet_Bog.png)
 
@@ -55,19 +125,19 @@ Para el proceso de subneteo en las redes IPv6 no se tiene informacion de cuantos
 ![SUBNETO DE LA RED ISP DE ESPAÑA](/image/Subneteo_R2-ISP_MAD.png)
 
 
-Para el subneteo de los espacios de red IPv6 se realizo el mismo proceso para los 4 espacios, como estandar buscamos una longitud de interfaz de 64 bits por lo que en este caso el número de bits que hacen falta para cumplir este estandar es de 16 bits (64-48=16) lo que seria igual a un cuarteto de la dirección el cual va a ser nuestro identificador de subred, una vez con esto sacamos las primeras 15 posibles subredes para cada espacio, unicamente para ver las primeras posiblidades que tenemos y solo seleccionamos la cantidad de reubredes necesarias por el espacio de red:
+Para el subneteo de los espacios de red IPv6 se realizo el mismo proceso para los 4 espacios, como estandar buscamos una longitud de interfaz de 64 bits por lo que en este caso el número de bits que hacen falta para cumplir este estandar es de 16 bits (64-48=16) lo que seria igual a un cuarteto de la dirección el cual va a ser nuestro identificador de subred. Una vez con esto sacamos las primeras 15 posibles subredes para cada espacio, unicamente para ver las primeras posiblidades que tenemos y solo seleccionamos la cantidad de subredes necesarias por el espacio de red:
 
-• La intranet de INTRANETota necesita un total de 3 subredes
+• La intranet de Bogota necesita un total de 3 subredes
 
 • La intranet de Madrid de igual manera necesita 3 subredes
 
-• El DMZ y la conexión WAN entre el R1_INTRANET y el ISP_INTRANET necesita 2 subredes 
+• El DMZ y la conexión WAN entre el R1_BOG y el ISP_INTRANET necesita 2 subredes 
 
 •La conexión Wan entre el R2_ESP y el ISP_ESP necesita una sola subred
 
 **Subneteo del espacio WAN**
 
-![SUBNETO DEL ESPACIO WAN(INTERNET)](/Image/Subneto_internet.png)
+![SUBNETO DEL ESPACIO WAN(INTERNET)](/image/Subneto_internet.png)
 
 Para este Subneteo el número de host pedidos por las especificaciones de la red es de 2 lo que da un total de 2 bits de reserva, lo que da una nueva mascara de subred con identificador 30 y un incremento de 4 en el cuarto octeto de la dirección. En este caso son necesarios 5 rangos de red para las conexiones entre los routers que pertenecen al internet
 
@@ -75,8 +145,49 @@ Para este Subneteo el número de host pedidos por las especificaciones de la red
 
 Finalmente con los Subneteos terminados pasamos a la construcción de la tabla de enrutamiento en la cual asignamos las direcciones IP a los diferentes dispositivos de la red y en los puertos que deben de ser asignadas, el resultado de esas asignaciones fue la siguiente tabla:
 
-![Tabla de direccionamiento en la red empresarial](/image/TABLA_DIRECCIONAMIENTO.png)
+![Tabla de direccionamiento en la red empresarial](\image\TABLA_DIRECCIONAMIENTO.png)
 
+****
+# Discusión de alternativas
+
+## Direccionamiento
+Como sabemos, no hay alternativas viables para la asiganción de direccionamiento estático, por lo que para gran parte de nuestra topología es imperativo que nos demos a la labor de asignar a mano cada una de las direcciones de nuestra tabla de enrutamiento. 
+
+Sin embargo, cuando hablamos del direccionamiento dinámico que tienen que tener los PC, nos encontramos con 3 posibles opciones al partir del hecho de que tienen que ser dinámicas y de protocolo IPv6:
+
+>**Opción 1:** Utilizar un servicio DHCPv6 stateful. Podríamos haber configurado en un cada uno de los routers o en un servidor DHCP la opción de que toda la información de red fuera entregada al host, de forma que se llevara la cuenta de las direcciones que se van asignando. Sin embargo, en la topología de la guía de laboratorio no se nos presenta ningún servidor que podamos utilizar para esta labor, y decidimos que la configuración podría ser muy desgastante cuando otras opciones nos permitían tomar ventaja del hecho de que, usando SLAAC, los hosts pueden generarsu propia dirección IP. Por estos motivos, descartamos esta opción.
+>
+>**Opción 2:** Utilizar un servicio únicamente de SLAAC. Si bien este servicio resuelve el problema de tener que asignar todos los diferentes rangos de direccionamiento, tiene la desventaja de que no nos permite darle al host dirección de red necesaria como el servidor DNS. Viendo que para los requisitos del laboratorio esta opción es inviable, puesto que no permitiría que los hosts accedieran a la página web usando el servicio DNS, la descartamos.
+>
+>**Opción 3:** Utilizar un servicio DHCPv6 stateless. A pesar de que la configuración no es tan simple como la opción 2, esta opción tiene la ventaja de que permite que los diferentes hosts se hagan cargo de su propia dirección IP encima de entregarles el resto de información relevante, en este caso, dirección de servidor DNS.
+
+Finalmente, nos decantamos por la tercera opción, por lo que configuramos la **flag O** y configuramos en cada una de las subinterfaces de las diferentes VLAN una pool de direcciones DHCP que, si bien contenía la dirección del servidor DNS, no nos exigía configurar todos los diferentes rangos de direccionamiento, permitiendo su reutilización en todas las subinterfaces independiente del rango de direccionamiento correspondiente a sus VLAN.
+
+## Enrutamiento
+Como bien mencionamos anteriormente, gran parte de los protocolos de enrutamiento son específicados por la guía de laboratorio, por lo que solo tuvimos que considerar alternativas en dos casos:
+
+- **Conexión entre ISP_FL e ISP_NET:** Puesto que esta conexión ocurre entre los espacios definidos por la guía, estaba a nuestra decisión cual protocolo sería el encargado de aprender la información correspondiente a este link. 
+
+    Puesto que necesitamos que el enrutamiento sea capaz de detectar cambios en la topología, decidimos que enrutar esta dirección de forma estática no era inteligente. Así, entre los 3 protocolos de direccionamiento vistos hasta el momento (RIP, EIGRP y OSPF) nos decidimos finalmente por EIGRP, puesto que al ser el protocolo que habíamos manejado anteriormente, era el protocolo con el que nos sentíamos más cómodos configurando, además claro de ser el protocolo con menor distancia administrativa entre los demás, lo cual representa una, si bien pequeña dado el tamaño de nuestra topología, ventaja al momento de escoger rutas más eficientes.
+
+- **Conexión virtual por Tunneling:** En este caso, al considerar que el túnel mantiene siempre la misma dirección y que los posibles cambios en la topología solo podría ocurrir en el Internet, sitio que ya está enrutado de forma dinámica, nos decantamos por enrutar esta conexión de forma estática, indicando a los routers R1_BOG y R2_ESP que enrutaran paquetes desconocidos hacia su ISP y a los routers ISP_BOG e ISP_ESP que enrutaran los paquetes destinados a cada una de las respectivas intranets mediante su interfaz virtual de túnel.
+
+## Filtrado
+Para el filtrado de paquetes, y basados en lo que hemos visto durante este semestre, teníamos la opción de usar un Firewall o Access List. Sin embargo, considerando que durante el semestre nunca nos tomamos el suficiente tiempo para explorar un Firewall, sus usos concretos o su configuración, nos decantamos por las Access Lists, las cuales ya hemos configurado anteriormente, entedemos de forma plena, y nos permiten el bloqueo de paquetes no solo en base a rangos de direcciones IP, sino también en base a los puertos siendo usados, lo que nos permite cumplir más fácilmente uno de los requisitos del laboratorio.
+
+## Migración
+
+Considerando los métodos de migración que vimos en este corte, teníamos 3 opciones para configurar la migración de paquetes entre IPv6 e IPv4. Estas opciones eran:
+
+>**Dual Stack:** La opción de configurar tanto IPv6 como IPv4 en cada uno de los hosts intermedios fue descartada inmediatamente por varias razones, entre las que se cuentan el desgaste de configurarlo respecto a otras opciones, falta de un rango claro de direccionamiento IPv6 que deberíamos usar para los dispositivos del Internet y la forma en la que invalida la práctica de hacer coexistir dos redes con protocolos de direccionamiento diferentes.
+>
+>**Tunneling:** Gracias a que la configuración de este método requiere tan solo de configurar dos routers de frontera para la creación del tunel virtual, nos decidimos por ella. Además de esto, consideramos el hecho de que, al encapsular el paquete como un paquete IPv4, puede hacer uso del enrutamiento dinámico IPv4 que ya habíamos configurado sin mayor cambio.
+>
+>**Translators:** Como vimos durante el semestre, este método es más bien un último recurso en caso de que no podamos o queramos aplicar cualquiera de los 2 métodos anteriores, pues no soluciona el hecho de hacer que los dos protocolos de direccionamiento coexistan en la misma topología. Por ello, y por la necesidad de escoger otro nuevo rango de direccionamiento IPv4 al cual traducir los paquetes, descartamos esta opción.
+
+Así, terminamos configurando Tunneling como nuestro método de migración entre protocolos de direccionamiento.
+
+****
 # Configuración
 
 Para todos los dispositivos intermedios(Routers,switches) se hace la misma configuración básica, en la que se le asigna un nombre, un mensaje de bienvenida y contraseñas de acceso tanto para entrar a su configuración (por cable de consola o por telnet) como para acceder a sus diferentes niveles administrativos.
@@ -240,3 +351,123 @@ R1_Bog(config-if)#exit
 ```
 
 Con estos comandos es suficiente para que los host puedan obtener su dirección IPV6 por medio de SLACC usando su dirección MAC para generar automaticamente su identificador de interfaz y puede acceder al servicio DHCP v6 para obtener la información sobre el servidor DNS al que debe acceder 
+
+****
+# Verificación
+
+## Capturas del funcionamiento
+- ### **Direccionamiento dinámico**
+Para demostrar el correcto funcionamiento del direccionamiento dinámico a lo largo de las 4 VLANs en las que fue configurado, presentamos a continuación una captura de un host en cada una de ellas:
+
+**VLAN 50 (BOGOTÁ)**
+
+![PC 1 recibiendo su información de red de forma automática](\image\Direccionamiento_1.png)
+
+**VLAN 100 (BOGOTÁ)**
+
+![PC 2 recibiendo su información de red de forma automática](\image\Direccionamiento_2.png)
+
+**VLAN 25 (ESPAÑA)**
+
+![PC 5 recibiendo su información de red de forma automática](\image\Direccionamiento_3.png)
+
+**VLAN 100 (ESPAÑA)**
+
+![PC 6 recibiendo su información de red de forma automática](\image\Direccionamiento_4.png)
+
+
+## Análisis de tráfico
+Dado que los PDU simples con los que estamos familiarizados no funcionan para IPv6, hay que tener en cuenta que realizamos este rastreo de paquetes haciendo uso del hecho de que, en modo simulación, un ping a una dirección IP nos permite ver todo el camino de los paquetes ICMPv6 enviados.
+
+Habiendo dicho esto, a continuación vamos a realizar el análisis de tráfico en dos casos que demuestran la funcionalidad de todos los requisitos de nuestro laboratorio.
+
+### **Ping entre PC5 (Intranet Madrid) y PC1 (Intranet Bogota):**
+
+Este análisis de tráfico corresponde al generado entre el PC5 y el PC1 cuando se genera un mensaje de ping entre los dos. 
+
+Para empezar, como podemos ver en la siguiente captura, el ping es exitoso.
+
+![Resultado de ping exitoso entre pc5 y pc1](\image\Ping_PC1.png)
+
+Vamos a analizar solo uno de los paquetes enviados como parte de este proceso ping. En la siguiente imagen se puede ver el camino entero que toma el paquete desde que sale del PC5, pasando por el internet, llegando al PC1 y siendo devuelto como respuesta hasta el PC5 una vez más.
+
+![Camino del paquete ping](\image\PDU_ronda.png)
+
+Para empezar, como podemos ver, el paquete se envía en primera instancia con la diercción de destino del PC1, con dirección a su default gateway dado que esta dirección no está en su misma red.
+
+![Instancia inicial del paquete ping](\image\PDU_start.png)
+
+A continuación, una vez llega a su default gateway se puede ver que, al ser un paquete que el router R2_ESP no conoce, se envía a su ruta estática por defecto, es decir a su ISP correspondiente.
+
+![El paquete es reenviado hacia el ISP](\image\PDU_outbound.png)
+
+Una vez llega al router ISP_ESP, este router identifica, gracias a su enrutamiento estático, que la dirección a la que necesita llegar al paquete se encuentra al otro lado de su tunel, por lo que encapsula al paquete en un paquete de dirección IPv4 de fuente **196.85.201.13**, es decir la dirección de la interfaz por la que el router está redireccionando el paquete, y destino **196.85.201.1**, es decir la dirección de llegada del tunel.
+
+![El paquete es encapsulado para IPv4](\image\PDU_tunel_in.png)
+
+Cuando el paquete termina de pasar por el tunel, es recibido una vez más por la interfaz final del tunel, y una vez aquí el router ISP_BOG lo desencapsula para revelar el paquete original con dirección de fuente y destino IPv6 una vez más. Puesto que este router conoce, gracias al enrutamiento dinámico, que la red de destino se encuentra por ese camino, redirecciona el paquete hacia la interfaz que le conecta con la intranet del PC1.
+
+![El paquete es desencapsulado y redireccionado](\image\PDU_tunel_out.png)
+
+Una vez el paquete se hace camino hasta el host de destino, este procesa el mensaje y envía una respuesta al ping, direccionandola al mismo host que le envió la petición en primer lugar.
+
+Igual que antes, el host no está en su misma red, por lo que se redirecciona a su default gateway.
+
+![El paquete es procesado y se envía una respuesta](\image\PDU_reply.png)
+
+El paquete pasa por exactamente el mismo proceso por el que pasó siendo enviado, puesto que los tuneles están configurados de la misma manera en los ISP_ESP e ISP_BOG, para finalmente volver al PC1, que realizó la solicitud, y ser procesado como exitoso.
+
+![El paquete es procesado como exitoso](\image\PDU_finish.png)
+
+Por supuesto, vale la pena mencionar que en cada paso en el que el paquete está en el Internet, este está siendo enrutado gracias a que la dirección de destino se compara con la tabla de enrutamiento que cada router ha construído y se redirecciona correspondientemente. Podemos ver un ejemplo de esto a continuación.
+
+![Camino del paquete ping](\image\PDU_routing.png)
+
+Así, podemos verificar que tanto nuestro método de migración como nuestro enrutamiento y direccionamiento funcionan correctamente para permitir la comunicación entre intranets.
+
+### **Petición TCP entre PC5 (Intranet Madrid) y el servidor web:**
+
+Este segundo análisis corresponde a los intentos de entrar a la página mediante los diferentes puertos TCP que corresponden a cada uno de los protocolos web (HTTP y HTTPS) que se nos pide limitar.
+
+Para este ejemplo, el PC5 intentará entrar a la página mediant HTTP y mediante HTTPS. Puesto que pertenece a la VLAN 25, es decir, la de Tesorería de Madrid, debería tener el acceso denegado por el puerto 80 (HTTP) pero no por el puerto 443 (HTTPS).
+
+Para empezar, veamos el tráfico realizado por un intento de acceso mediante protocolo HTTPS.
+
+![Tráfico generado por un intento HTTPS](\image\PDU2_start.png)
+
+Como se puede ver, el intento contiene la totalidad de una petición DNS mediante la que traduce el nombre a una dirección IP, y una vez la obtiene realiza un proceso TCP el cual es exitoso de igual forma, lo que podemos asumir de ver que empieza y termina en el PC5 pasando por el Servidor Web.
+
+Ahora, miremos más detenidamente el filtro por el que pasa al intentar salir por el R2_ESP.
+
+![Comprobación contra ACL válida](\image\PDU2_valid.png)
+
+Efectivamente, el paquete es revisado contra la Access List que el puerto tiene configurada, y al no chocar con ningún criterio, es permitida gracias al mensaje final dentro de la misma.
+
+Así, verificamos que el PC5 puede entrar de forma exitosa a la página web solo usando el puerto que se le es permitido. Vamos a contrastar ahora lo que pasa si la petición TCP que usa es de tipo HTTP.
+
+![Tráfico generado por un intento HTTP](\image\PDU3_start.png)
+
+Como se puede ver, el tráfico es interrumpido a la mitad una vez se obtiene la dirección IP mediante el proceso DNS y se intenta salir de la red. A continuación, el router, devuleve una serie de mensajes que indican que el host no es alcanzable. Tomemos un vistazo más de cerca a lo que impide que el proceso termine viendo el paquete cuando pasa por R2_ESP.
+
+![Comprobación contra ACL denegada](\image\PDU3_denied.png)
+
+Como se esperaba, al momento de ser comprobado contra la Access List que el puerto de salida tiene configurada, podemos ver que se deniega el acceso a cualquier paquete originario de la VLAN de Tesorería que esté intentando usar el puerto 80, y por tanto, es rechazado.
+
+Con esto, hemos verificado de igual forma que el protocolo de filtrado de paquetes escogido funciona correctamente y de acuerdo a lo que el laboratorio nos exige.
+
+****
+# Retos y recomendaciones
+
+En cuanto al direccionamiento de este proyecto, el único reto que enfrentamos fue la incorrecta asignación original de direcciones IPv4 para el Internet, lo que llevó a errores en el posterior enrutamiento.
+
+Para ello, recomendamos no perder la concentración o confiarse en demasía debido a lo simple que es el enrutamiento IPv6, y revisar siempre las interfaces que están conectadas en la topología antes de empezar a realizar la tabla de enrutamiento que dictará las direcciones que debe tener cada interfaz.
+
+
+****
+# Conclusiones
+Para finalizar esta práctica, nos gustaría concluír unas cuantas cosas.
+
+Para empezar, queremos recalcar lo sencillo que es trabajar con IPv6 respecto a trabajar con IPv4. Con esto nos referimos a cada parte del proceso, desde el subneteo, que se convierte en una tarea trivial, pasando por el direccionamiento dinámico, que es tan simple como permitir que cada host construya su propia dirección y reciba la información restante, hasta el enrutamiento, en cuyo caso solo hay que asignar los protocolos a las interfaces y dejar que hagan ellas el resto del trabajo.
+
+A su vez, queremos recalcar lo útil que es ver en acción todos los protocolos de red en una simulación más acercada a la realidad. Ver el funcionamiento detenido de un proceso de Tunneling, por poner un ejemplo, es de gran ayuda para entender la forma en la que se empaquetan los mensajes y se procesan a lo largo de la topología hasta ser desempaquetados una vez más.
+
