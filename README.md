@@ -145,7 +145,7 @@ Para este Subneteo el número de host pedidos por las especificaciones de la red
 
 Finalmente con los Subneteos terminados pasamos a la construcción de la tabla de enrutamiento en la cual asignamos las direcciones IP a los diferentes dispositivos de la red y en los puertos que deben de ser asignadas, el resultado de esas asignaciones fue la siguiente tabla:
 
-![Tabla de direccionamiento en la red empresarial](\image\TABLA_DIRECCIONAMIENTO.png)
+![Tabla de direccionamiento en la red empresarial](image\TABLA_DIRECCIONAMIENTO.png)
 
 ****
 # Discusión de alternativas
@@ -361,19 +361,19 @@ Para demostrar el correcto funcionamiento del direccionamiento dinámico a lo la
 
 **VLAN 50 (BOGOTÁ)**
 
-![PC 1 recibiendo su información de red de forma automática](\image\Direccionamiento_1.png)
+![PC 1 recibiendo su información de red de forma automática](image\Direccionamiento_1.png)
 
 **VLAN 100 (BOGOTÁ)**
 
-![PC 2 recibiendo su información de red de forma automática](\image\Direccionamiento_2.png)
+![PC 2 recibiendo su información de red de forma automática](image\Direccionamiento_2.png)
 
 **VLAN 25 (ESPAÑA)**
 
-![PC 5 recibiendo su información de red de forma automática](\image\Direccionamiento_3.png)
+![PC 5 recibiendo su información de red de forma automática](image\Direccionamiento_3.png)
 
 **VLAN 100 (ESPAÑA)**
 
-![PC 6 recibiendo su información de red de forma automática](\image\Direccionamiento_4.png)
+![PC 6 recibiendo su información de red de forma automática](image\Direccionamiento_4.png)
 
 
 ## Análisis de tráfico
@@ -387,41 +387,41 @@ Este análisis de tráfico corresponde al generado entre el PC5 y el PC1 cuando 
 
 Para empezar, como podemos ver en la siguiente captura, el ping es exitoso.
 
-![Resultado de ping exitoso entre pc5 y pc1](\image\Ping_PC1.png)
+![Resultado de ping exitoso entre pc5 y pc1](image\Ping_PC1.png)
 
 Vamos a analizar solo uno de los paquetes enviados como parte de este proceso ping. En la siguiente imagen se puede ver el camino entero que toma el paquete desde que sale del PC5, pasando por el internet, llegando al PC1 y siendo devuelto como respuesta hasta el PC5 una vez más.
 
-![Camino del paquete ping](\image\PDU_ronda.png)
+![Camino del paquete ping](image\PDU_ronda.png)
 
 Para empezar, como podemos ver, el paquete se envía en primera instancia con la diercción de destino del PC1, con dirección a su default gateway dado que esta dirección no está en su misma red.
 
-![Instancia inicial del paquete ping](\image\PDU_start.png)
+![Instancia inicial del paquete ping](image\PDU_start.png)
 
 A continuación, una vez llega a su default gateway se puede ver que, al ser un paquete que el router R2_ESP no conoce, se envía a su ruta estática por defecto, es decir a su ISP correspondiente.
 
-![El paquete es reenviado hacia el ISP](\image\PDU_outbound.png)
+![El paquete es reenviado hacia el ISP](image\PDU_outbound.png)
 
 Una vez llega al router ISP_ESP, este router identifica, gracias a su enrutamiento estático, que la dirección a la que necesita llegar al paquete se encuentra al otro lado de su tunel, por lo que encapsula al paquete en un paquete de dirección IPv4 de fuente **196.85.201.13**, es decir la dirección de la interfaz por la que el router está redireccionando el paquete, y destino **196.85.201.1**, es decir la dirección de llegada del tunel.
 
-![El paquete es encapsulado para IPv4](\image\PDU_tunel_in.png)
+![El paquete es encapsulado para IPv4](image\PDU_tunnel_in.png)
 
 Cuando el paquete termina de pasar por el tunel, es recibido una vez más por la interfaz final del tunel, y una vez aquí el router ISP_BOG lo desencapsula para revelar el paquete original con dirección de fuente y destino IPv6 una vez más. Puesto que este router conoce, gracias al enrutamiento dinámico, que la red de destino se encuentra por ese camino, redirecciona el paquete hacia la interfaz que le conecta con la intranet del PC1.
 
-![El paquete es desencapsulado y redireccionado](\image\PDU_tunel_out.png)
+![El paquete es desencapsulado y redireccionado](image\PDU_tunel_out.png)
 
 Una vez el paquete se hace camino hasta el host de destino, este procesa el mensaje y envía una respuesta al ping, direccionandola al mismo host que le envió la petición en primer lugar.
 
 Igual que antes, el host no está en su misma red, por lo que se redirecciona a su default gateway.
 
-![El paquete es procesado y se envía una respuesta](\image\PDU_reply.png)
+![El paquete es procesado y se envía una respuesta](image\PDU_reply.png)
 
 El paquete pasa por exactamente el mismo proceso por el que pasó siendo enviado, puesto que los tuneles están configurados de la misma manera en los ISP_ESP e ISP_BOG, para finalmente volver al PC1, que realizó la solicitud, y ser procesado como exitoso.
 
-![El paquete es procesado como exitoso](\image\PDU_finish.png)
+![El paquete es procesado como exitoso](image\PDU_finish.png)
 
 Por supuesto, vale la pena mencionar que en cada paso en el que el paquete está en el Internet, este está siendo enrutado gracias a que la dirección de destino se compara con la tabla de enrutamiento que cada router ha construído y se redirecciona correspondientemente. Podemos ver un ejemplo de esto a continuación.
 
-![Camino del paquete ping](\image\PDU_routing.png)
+![Camino del paquete ping](image\PDU_routing.png)
 
 Así, podemos verificar que tanto nuestro método de migración como nuestro enrutamiento y direccionamiento funcionan correctamente para permitir la comunicación entre intranets.
 
@@ -433,23 +433,23 @@ Para este ejemplo, el PC5 intentará entrar a la página mediant HTTP y mediante
 
 Para empezar, veamos el tráfico realizado por un intento de acceso mediante protocolo HTTPS.
 
-![Tráfico generado por un intento HTTPS](\image\PDU2_start.png)
+![Tráfico generado por un intento HTTPS](image\PDU2_start.png)
 
 Como se puede ver, el intento contiene la totalidad de una petición DNS mediante la que traduce el nombre a una dirección IP, y una vez la obtiene realiza un proceso TCP el cual es exitoso de igual forma, lo que podemos asumir de ver que empieza y termina en el PC5 pasando por el Servidor Web.
 
 Ahora, miremos más detenidamente el filtro por el que pasa al intentar salir por el R2_ESP.
 
-![Comprobación contra ACL válida](\image\PDU2_valid.png)
+![Comprobación contra ACL válida](image\PDU2_valid.png)
 
 Efectivamente, el paquete es revisado contra la Access List que el puerto tiene configurada, y al no chocar con ningún criterio, es permitida gracias al mensaje final dentro de la misma.
 
 Así, verificamos que el PC5 puede entrar de forma exitosa a la página web solo usando el puerto que se le es permitido. Vamos a contrastar ahora lo que pasa si la petición TCP que usa es de tipo HTTP.
 
-![Tráfico generado por un intento HTTP](\image\PDU3_start.png)
+![Tráfico generado por un intento HTTP](image\PDU3_start.png)
 
 Como se puede ver, el tráfico es interrumpido a la mitad una vez se obtiene la dirección IP mediante el proceso DNS y se intenta salir de la red. A continuación, el router, devuleve una serie de mensajes que indican que el host no es alcanzable. Tomemos un vistazo más de cerca a lo que impide que el proceso termine viendo el paquete cuando pasa por R2_ESP.
 
-![Comprobación contra ACL denegada](\image\PDU3_denied.png)
+![Comprobación contra ACL denegada](image\PDU3_denied.png)
 
 Como se esperaba, al momento de ser comprobado contra la Access List que el puerto de salida tiene configurada, podemos ver que se deniega el acceso a cualquier paquete originario de la VLAN de Tesorería que esté intentando usar el puerto 80, y por tanto, es rechazado.
 
