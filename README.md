@@ -403,11 +403,19 @@ A continuación, una vez llega a su default gateway se puede ver que, al ser un 
 
 Una vez llega al router ISP_ESP, este router identifica, gracias a su enrutamiento estático, que la dirección a la que necesita llegar al paquete se encuentra al otro lado de su tunel, por lo que encapsula al paquete en un paquete de dirección IPv4 de fuente **196.85.201.13**, es decir la dirección de la interfaz por la que el router está redireccionando el paquete, y destino **196.85.201.1**, es decir la dirección de llegada del tunel.
 
+<<<<<<< HEAD
 ![El paquete es encapsulado para IPv4](image\PDU_tunel_in.png)
 
 Cuando el paquete termina de pasar por el tunel, es recibido una vez más por la interfaz final del tunel, y una vez aquí el router ISP_BOG lo desencapsula para revelar el paquete original con dirección de fuente y destino IPv6 una vez más. Puesto que este router conoce, gracias al enrutamiento dinámico, que la red de destino se encuentra por ese camino, redirecciona el paquete hacia la interfaz que le conecta con la intranet del PC1.
 
 ![El paquete es desencapsulado y redireccionado](image\PDU_tunnel_out.png)
+=======
+![El paquete es encapsulado para IPv4](image\PDU_tunnel_in.png)
+
+Cuando el paquete termina de pasar por el tunel, es recibido una vez más por la interfaz final del tunel, y una vez aquí el router ISP_BOG lo desencapsula para revelar el paquete original con dirección de fuente y destino IPv6 una vez más. Puesto que este router conoce, gracias al enrutamiento dinámico, que la red de destino se encuentra por ese camino, redirecciona el paquete hacia la interfaz que le conecta con la intranet del PC1.
+
+![El paquete es desencapsulado y redireccionado](image\PDU_tunel_out.png)
+>>>>>>> 05c2169703dde6a429038ef06deb8fd55df098d9
 
 Una vez el paquete se hace camino hasta el host de destino, este procesa el mensaje y envía una respuesta al ping, direccionandola al mismo host que le envió la petición en primer lugar.
 
