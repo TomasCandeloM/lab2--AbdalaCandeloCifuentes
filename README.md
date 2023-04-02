@@ -352,7 +352,74 @@ R1_Bog(config-if)#exit
 
 Con estos comandos es suficiente para que los host puedan obtener su dirección IPV6 por medio de SLACC usando su dirección MAC para generar automaticamente su identificador de interfaz y puede acceder al servicio DHCP v6 para obtener la información sobre el servidor DNS al que debe acceder 
 
-****
+## Multilayer switch 
+
+Para la intranet de Madrid se encesita que esta cuente con un multilayer switch 3650 que haga la funcion de un switch 2810, por lo que recibe las mismas configuraciones basicas que los switches, ademas de que dentro de este tamien se encontrara la creacion y configuración de las vlans 
+
+```
+MLSW(config)#VLAN 25
+MLSW(config-vlan)#name Tesoreria
+MLSW(config-vlan)#vlan 50
+MLSW(config-vlan)#name Vice
+MLSW(config-vlan)#vlan 1
+```
+a la vlan 1 no se le asigno el nombre ya que este no puede ser modificado
+
+Luego de esto configuramos el enlace troncal en el rango de interfaces de la 1 a la 3 donde la vlan 1 es la nativa, además asignamos la direccion ipv6 correspondiente a la interfaz de la vlan 1 
+
+```
+MLSW(config)#interface range gig 1/0/1-3
+MLSW(config-if-range)# switchport mode trunk
+MLSW(config-if-range)# switchport trunk native vlan 1
+MLSW(config-if-range)# exit
+MLSW(config)#interface VLAN 1
+MLSW(config-if-range)# IPv6 address 2001:1200:B1:1::2/64
+```
+Finalemente agregamos la dirección del default gateway configurado en el router de España
+
+```
+MLSW(config)#ipv6 route ::/0 2001:1200:B1:1::1
+```
+
+## NAT 
+
+## Tunneling 
+Para finalizar con las configuraciones y poder establecer conexion entre intranets y que la intranet de madrid pueda acceder a la pagina web, es la configuración de un protocolo de migración, en este caso un tunnel que nos permitira concetar los dos espacios de redes IPv6 por medio de una red IPv4. Este tunnel sera configurado en los routers que tienen anbos protocolos funcionando en el mismo router, en este caso son los ISP de bogotá y España 
+
+Lo primero que hacemos es habilitar la interfaz del tunnel, esto se logra unicamente accediendo a la interfaz, luego le agregamos su dirección IPv6 y la fuente y destino del tunel, para la fuente se agrega la interfaz fisica conectada al router por la que se quiere enviar la información, para el caso del destino no se pone la interfaz del puerto de llegadoa, sino que se escribe la dirección IP vinculada a dicho puerto, por ultimo para terminar con la configuración basica se asigna el tipo de tunnel deseado, en este caso el tuene el de tipo ipv6ip, el cual simboliza que la encapsulación de los archivos ipv6 los transporta por medio de una encapsulación en ipv4 y este mismo es su medio de transporte 
+
+```
+ISP_BOG (config)#interface tunnel 0 
+ISP_BOG(config-if)#ipv6 address 2001:1200:A1:A::1/64
+ISP_BOG(config-if)#tunnel source Serial0/1/0
+ISP_BOG(config-if)#tunnel destination 196.85.201.13
+ISP_BOG(config-if)#tunnel mode ipv6ip
+```
+
+Aicionalmente los tuneles tenian que ser capaces de reconocer y enrutar los protocolos que hacen parte de su respectivo rouer, en el caso de Bogotá OSPFv3 y en el caos de España EIGRPv6
+
+```
+ISP_BOG(config-if)# ipv6 ospf 51 area 0
+```
+Finalmente tnemos que enrutar los paquetes que vengan de la red ipv6 para que puedan ir atravez del internet, para eso el enrutamiento lo dejamos dinamico de manera que si llega un paquete que se dirige a la otra intranet este se envia atravez del tunnel 
+
+```
+ISP_BOG(config)# ipv6 route 2001:1200:B1::/48 2001:1200:A1:A::2
+```
+Como los tuneles tienen una direccion IPv6 que hace parte del subneteo de la intranet de bogota para configurar el enrutamiento de madrid a esta especificamos que este camino los tomen las direcciones que van hacia las vlans de Bogotá
+
+```
+ISP_BOG(config)# ipv6 route 2001:1200:A1:1::/64 2001:1200:A1:A::1
+ISP_BOG(config)# ipv6 route 2001:1200:A1:2::/64 2001:1200:A1:A::1
+ISP_BOG(config)# ipv6 route 2001:1200:A1:3::/64 2001:1200:A1:A::1
+ISP_BOG(config)# ipv6 route 2001:1200:C1::/48 2001:1200:A1:A::1
+```
+
+Como se puede ver en la imagen las rutas quedaron configuradas de manera estatica a los respectivos destinos.
+
+![Rutas estaticas de los tuneles](/image/Rutas_Tunneles.png)
+
+**** 
 # Verificación
 
 ## Capturas del funcionamiento
