@@ -678,6 +678,10 @@ En cuanto al direccionamiento de este proyecto, el único reto que enfrentamos f
 
 Para ello, recomendamos no perder la concentración o confiarse en demasía debido a lo simple que es el enrutamiento IPv6, y revisar siempre las interfaces que están conectadas en la topología antes de empezar a realizar la tabla de enrutamiento que dictará las direcciones que debe tener cada interfaz.
 
+Consideramos que uno de los retos que más atención nos demandó fue el tema del enrutamiento, pues si bien ya se había desarrollado algún tipo de práctica con uno de los dos, el hecho de tener que manejar dos protocolos al mismo tiempo y aparte requerir de Tunneling debido al IPv6, generó bastantes confusiones durante el desarrollo, sin embargo, tras consultar bastante, se lograron solucionar las dificultades que principalmente se habían generado por errores a la hora de ingresar el direccionamiento.
+
+Las ACL’s solo presentaron ciertas dificultades en la Intranet de Madrid, pues sin saber por que, estas no funcionaban correctamente, se trataron de hacer modificaciones varias sin ningún resultado, hasta que finalmente funcionaron, se considera que fue por algún fallo de Cisco Packet Tracer, pues estas funcionaron después de reiniciar el programa, o si no, por algún error no descubierto a la hora de ingresar las direcciones. Sin embargo, esta situación no genero mayor problema a la hora de desarrollar el laboratorio, pues como ya se mencionó, se soluciono al reiniciar el programa.
+
 
 ****
 # Conclusiones
