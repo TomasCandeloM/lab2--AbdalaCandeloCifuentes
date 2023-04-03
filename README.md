@@ -380,8 +380,156 @@ Finalemente agregamos la dirección del default gateway configurado en el router
 ```
 MLSW(config)#ipv6 route ::/0 2001:1200:B1:1::1
 ```
+## ACL'S (Access Control Lists)
+
+**Requerimientos:** El Departamento de Tecnología solicitó los siguientes filtros de paquetes: Todos los hosts de la Intranet Bogotá acceden al servidor Web a través del protocolo HTTPs (puerto 443) y no por HTTP (puerto 80). Los usuarios del área de Vicepresidencia en la Intranet Madrid deben tener restringido el acceso al servidor Web por HTTPs (puerto 443) y HTTP (puerto 80). Los usuarios del Departamento de Tesorería sólo deben acceder al servidor Web por el puerto 443. Finalmente, El Departamento de Tecnología accede al servidor Web por HTTPs (puerto 443) y HTTP (puerto 80). ¿Qué servicio IPv6se debe configurar?
+
+**Configuración:** Para el desarrollo de este laboratorio, fue necesario hacer uso de ACL’s (Listas de Control de Acceso) que soportaran IPv6, pues tanto el router R1_BOG y el R2_ESP hacen uso de este tipo de direccionamiento. 
+
+Para el router de Bogotá, fue necesario hacer un bloqueo en la interfaz de salida FastEthernet 0/0, esto con el propósito de contar con un mayor control de tráfico además de evitar cargas innecesarias en el Router que tendrá que recibir paquetes que después tendrá que descartar en caso de que se pusiera en la interfaz de entrada. Poner el Access List en la interfaz de salida permite solo enviar los paquetes que han sido aceptados para ser reenviados.
+
+El bloqueo para el R1-BOG se realizó únicamente para la Vlan de Ingeniería en el puerto 80 (HTTP) pues se nos explica que la Vlan de Tecnología no necesitara ningún tipo de bloqueo al poder ingresar por medio de cualquiera de los dos puertos 80 o 443.
+
+El Access List se configuro de la siguiente manera:
+
+```
+R1_BOG(config)#ipv6 access-list (Nombre del Access List)
+R1_BOG(config-ipv6-acl)#deny tcp (Dirección Identificadora de la Vlan) any eq (Puerto)
+R1_BOG(config-ipv6-acl)#ipv6 permit any any
+R1_BOG(config-ipv6-acl)#exit
+R1_BOG(config)#interface (Interfaz)
+R1_BOG(config-if)#ipv6 traffic-filter (Nombre del Access List) out/in
+```
+
+Ya con las direcciones establecidas por la guía de laboratorio y por el equipo, los comandos quedan de la siguiente manera:
+
+```
+R1_BOG(config)#ipv6 access-list NO-HTTP-BOGOTA
+R1_BOG(config-ipv6-acl)#deny tcp 2001:1200:A1:2::/64 any eq 80
+R1_BOG(config-ipv6-acl)#ipv6 permit any any
+R1_BOG(config-ipv6-acl)#exit
+R1_BOG(config)#interface Fa0/0
+R1_BOG(config-if)#ipv6 traffic-filter NO-HTTP-BOGOTA out
+```
+Para comprobar la creación de la Access List, usamos el comando:
+```
+R1_BOG# show access-lists
+```
+![PRUEBA-ACL-BOGOTA](/image/PRUEBA-ACL-BOGOTA.png)
+
+Para el R2_ESP, se uso la misma lógica que para el R1_BOG, estableciendo el Access List en la interfaz de salida del router. En este caso La Vlan de tesorería podría hacer uso únicamente del puerto 443 mientras que Vicepresidencia no podría hacer uso de este puerto ni tampoco del 80, por lo que ninguno de los dos protocolos debería funcionar para esta subred. Los comandos para esta Access List fueron los siguientes:
+
+```
+R2_ESP(config)#ipv6 access-list ACL-MADRID
+R2_ESP(config-ipv6-acl)#deny tcp 2001:1200:B1:2::/64 any eq 80
+R2_ESP(config-ipv6-acl)#deny tcp 2001:1200:B1:3::/64 any eq 80
+R2_ESP(config-ipv6-acl)#deny tcp 2001:1200:B1:3::/64 any eq 443
+R2_ESP(config-ipv6-acl)#ipv6 permit any any
+R2_ESP(config-ipv6-acl)#exit
+R2_ESP(config)#interface Se0/0/0
+R2_ESP(config-if)#ipv6 traffic-filter ACL-MADRID out
+```
+
+```
+R2_ESP#show access-lists
+```
+![PRUEBA-ACL-MADRID](/image/PRUEBA-ACL-MADRID.png)
+
+Para ambos casos se añadió al final de las condiciones el comando “ipv6 permit any any” con el propósito de permitir cualquier envió de información aparte de las limitaciones establecidas en las Access Lists.
+A continuación, las comprobaciones de las Access Lists en cada una de las Vlan’s:
+
+![R1_BOG_PC1_ACCESS-LIST](/image/R1_BOG_PC1_ACCESS-LIST.jpg)
+
+![R1_BOG_PC2_ACCESS-LIST](/image/R1_BOG_PC2_ACCESS-LIST.jpg)
+
+![R2_ESP_PC5_ACCESS-LIST](/image/R2_ESP_PC5_ACCESS-LIST.jpg)
+
+![R2_ESP_PC6_ACCESS-LIST](/image/R2_ESP_PC6_ACCESS-LIST.jpg)
 
 ## NAT 
+
+## Enrutamiento
+
+En este laboratorio, el enrutamiento constaba de varias partes. Primeramente, era necesario identificar los protocolos que se nos requerían en cada uno de los routers:
+
+![PROTOCOLOS_ENRUTAMIENTO](/image/PROTOCOLOS_ENRUTAMIENTO.jpg)
+
+Como podemos ver, tenemos dos conexiones EIGRP que hará uso de IPv4, dos conexiones que usaran OSPF v2, una conexión que hará uso de EIGRP v6 y una ultima que hará uso de OSPF v3. Nos quedará faltando una conexión que es la que se establece entre ISP_FL y ISP_NET, para esta decidimos como grupo usar EIGRP.
+
+Como podemos ver, hay una mezcla de bastantes protocolos de enrutamiento tanto de IPv4 como de IPv6, por ello es necesario implementar la redistribución en estos protocolos.
+
+La redistribución se refiere al proceso en el que se comparte información entre protocolos de enrutamiento, esto se hace debido a que las métricas establecidas en cada uno de los protocolos son diferentes, por ello es necesario que esta información sea comprensible para cada uno de los protocolos y así hacer que el enrutamiento general funcione de manera correcta.
+
+Lo primero que se debe hacer, es establecer los enrutamientos que se van a usar en cada uno de los routers con sus conexiones vecinas, por ejemplo, en el ISP_FL solo habrá conexiones EIGRP, por lo que este router solo hará uso de este protocolo. Se usan los siguientes comandos:
+
+```
+ISP_FL(config)#router eigrp 1
+ISP_FL(config-router)#network 196.85.201.0 0.0.0.3
+ISP_FL(config-router)#network 196.85.201.12 0.0.0.3
+ISP_FL(config-router)#network 196.85.201.8 0.0.0.3
+```
+De esta manera, el router habrá aprendido las direcciones de sus nodos vecinos. Debemos hacer esto para todos los routers, teniendo, en cuenta que si el router requiere de aprender de un vecino que use un protocolo, este router deberá tener el protocolo configurado, por ejemplo, ISP_NET tiene dos conexiones de OSPF y una de EIGRP que es la que aprenderá de ISP_FL, por ello, será necesario configurar el router con ambos protocolos de la siguiente manera:
+
+```
+ISP_NET(config)#router eigrp 1
+ISP_NET(config-router)#network 196.85.201.8 0.0.0.3
+ISP_NET(config-router)#exit
+ISP_NET(config)#router ospf 1
+ISP_NET(config-router)#network 196.85.201.16 0.0.0.3 area 0
+ISP_NET(config-router)#network 196.85.201.4 0.0.0.3 area 0
+ISP_NET(config-router)# router-id 2.2.2.2
+```
+Podemos ver que en OSPF debemos poner dos variables o parámetros nuevos que en EIGRP no se requerían, el primero es el área que es una manera de dividir una gran red en pequeñas sub redes para mejorar el rendimiento del protocolo, para el laboratorio pondremos todos los routers en área 0, y el otro es el router-id, el cual ayuda al protocolo a identificar de manera más sencilla los paquetes y los routers.
+
+A continuación, deberemos hacer lo mismo en todos los routers, teniendo en cuenta que los que requieran de direcciones IPv6 tendrán ciertos cambios en los comandos:
+
+EIGRP IPv6:
+```
+ISP_ESP(config)#ipv6 router eigrp 101
+ISP_ESP(config-rtr)#eigrp router-id 3.3.3.3
+ISP_ESP(config-rtr)#no shutdown
+ISP_ESP(config-rtr)#exit
+ISP_ESP(config)#interface se0/0/0
+ISP_ESP(config-if)#ipv6 eigrp 101
+```
+OSPF IPv6:
+
+```
+ISP_BOG(config)#ipv6 router ospf 51
+ISP_BOG(config-rtr)#router-id 1.1.1.1
+ISP_BOG(config-rtr)#no shutdown
+ISP_BOG(config-rtr)#exit
+ISP_BOG(config)#interface se0/0/0
+ISP_BOG(config-if)#ipv6 ospf 51 area 0
+```
+Como Podemos ver, es necesario establecer el router-id tanto para OSPF como para EIGRP además de activar “manualmente” usando “no shutdown”. Usar este tipo de direccionamiento nos da la ventaja de no tener que ingresar manualmente las direcciones vecinas si no que al activar en las interfaces los protocolos de enrutamiento, estos asignaran las direcciones automáticamente.
+
+Por último, será necesario configurar la redistribución, en cada router que tenga conexiones que usen diferentes protocolos, será necesario asignar este proceso:
+
+Redistribución EIGRP de Interfaces OSPF:
+
+```
+ISP_BOG(config)#router eigrp 1
+ISP_BOG(config-router)#redistribute ospf 1 metric 1000 100 255 1 1500
+ISP_BOG(config-router)#exit
+```
+Esta parte de comandos hará que los protocolos EIGRP asignados, aprendan lo que las conexiones OSPF han aprendido gracias a los vecinos, es decir, “traduce” lo aprendido por OSPF para que EIGRP lo pueda tanto usar como compartir y así completar la tabla de enrutamiento de cada uno de los routers sin importar como estén asignadas sus interfaces con sus protocolos de enrutamiento. Podemos ver que para hacer este proceso, será necesario introducir las métricas que en este caso fueron las default que usa OSPF, proceso que no habrá que hacer cuando se haga redistribución OSPF de interfaces EIGRP:
+
+Redistribución OSPF de Interfaces EIGRP:
+
+```
+ISP_BOG(config)#router ospf 1
+ISP_BOG(config-router)#redistribute eigrp 1 metric 1 subnets
+ISP_BOG(config-router)#exit
+```
+De esta manera los diferentes protocolos podrán aprender las rutas entre ellos, es necesario hacer este proceso en cada uno de los routers con el propósito de que todas las tablas de enrutamiento queden completas y funcionando correctamente.
+
+![TABLA-ENRUTAMIENTO-IPv4](/image/TABLA-ENRUTAMIENTO-ISP_BOG.png)
+
+En el pantallazo se puede ver la tabla de enrutamiento resultante, es importante mencionar que en los routers que requieran IPv6, se generara una tabla con cada tipo de direccionamiento, es decir, una con IPv4 y una con IPv6 en la que se mostrarán que hay en cada tipo de direcciones.
+
+![TABLA-ENRUTAMIENTO-IPv6](/image/TABLA-ENRUTAMIENTO-ISP_BOG-IPv6.png)
+
 
 ## Tunneling 
 Para finalizar con las configuraciones y poder establecer conexion entre intranets y que la intranet de madrid pueda acceder a la pagina web, es la configuración de un protocolo de migración, en este caso un tunnel que nos permitira concetar los dos espacios de redes IPv6 por medio de una red IPv4. Este tunnel sera configurado en los routers que tienen anbos protocolos funcionando en el mismo router, en este caso son los ISP de bogotá y España 
@@ -418,6 +566,7 @@ ISP_BOG(config)# ipv6 route 2001:1200:C1::/48 2001:1200:A1:A::1
 Como se puede ver en la imagen las rutas quedaron configuradas de manera estatica a los respectivos destinos.
 
 ![Rutas estaticas de los tuneles](/image/Rutas_Tunneles.png)
+
 
 **** 
 # Verificación
@@ -470,7 +619,7 @@ A continuación, una vez llega a su default gateway se puede ver que, al ser un 
 
 Una vez llega al router ISP_ESP, este router identifica, gracias a su enrutamiento estático, que la dirección a la que necesita llegar al paquete se encuentra al otro lado de su tunel, por lo que encapsula al paquete en un paquete de dirección IPv4 de fuente **196.85.201.13**, es decir la dirección de la interfaz por la que el router está redireccionando el paquete, y destino **196.85.201.1**, es decir la dirección de llegada del tunel.
 
-![El paquete es encapsulado para IPv4](/image/PDU_tunel_in.png)
+![El paquete es encapsulado para IPv4](/image/PDU_tunnel_in.png)
 
 Cuando el paquete termina de pasar por el tunel, es recibido una vez más por la interfaz final del tunel, y una vez aquí el router ISP_BOG lo desencapsula para revelar el paquete original con dirección de fuente y destino IPv6 una vez más. Puesto que este router conoce, gracias al enrutamiento dinámico, que la red de destino se encuentra por ese camino, redirecciona el paquete hacia la interfaz que le conecta con la intranet del PC1.
 
