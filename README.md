@@ -528,7 +528,7 @@ De esta manera los diferentes protocolos podrán aprender las rutas entre ellos,
 
 En el pantallazo se puede ver la tabla de enrutamiento resultante, es importante mencionar que en los routers que requieran IPv6, se generara una tabla con cada tipo de direccionamiento, es decir, una con IPv4 y una con IPv6 en la que se mostrarán que hay en cada tipo de direcciones.
 
-![TABLA-ENRUTAMIENTO-IPv6](/image/TABLA-ENRUTAMIENTO-ISP_BOG-IPv6.png)
+![TABLA-ENRUTAMIENTO-IPv6](/image/TABLA-ENRUTAMIENTO-ISP_BOG-IPV6.png)
 
 
 ## Tunneling 
