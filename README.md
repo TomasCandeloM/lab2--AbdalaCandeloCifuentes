@@ -682,6 +682,10 @@ Consideramos que uno de los retos que más atención nos demandó fue el tema de
 
 Las ACL’s solo presentaron ciertas dificultades en la Intranet de Madrid, pues sin saber por que, estas no funcionaban correctamente, se trataron de hacer modificaciones varias sin ningún resultado, hasta que finalmente funcionaron, se considera que fue por algún fallo de Cisco Packet Tracer, pues estas funcionaron después de reiniciar el programa, o si no, por algún error no descubierto a la hora de ingresar las direcciones. Sin embargo, esta situación no genero mayor problema a la hora de desarrollar el laboratorio, pues como ya se mencionó, se soluciono al reiniciar el programa.
 
+El ultimo de los retos que se nos presentaron fue la configuración del tunnel ya que no contabamos con la experiencia ni la información suficiente para poder realizar la configuración, sin embargo con las alcaraciones realizadas por el profesor, además de la documentación utilizada para entender como funciona logramos solucionar los problemas presentados en base a las decisiones que tomamos para la configuración. 
+
+La recomendación que podemos dar en base a este protocolo de migración es que en caso de tener solo dos redes interconectadas por la red IPv4, la configuración del enrutamiento es mucho más sencillo realizarla de manera estatica ya que la cantidad de especificaciones de rutas que se debe hacer no es alta y es más facil que realizar enrutamiento dinamico.
+
 
 ****
 # Conclusiones
@@ -690,4 +694,6 @@ Para finalizar esta práctica, nos gustaría concluír unas cuantas cosas.
 Para empezar, queremos recalcar lo sencillo que es trabajar con IPv6 respecto a trabajar con IPv4. Con esto nos referimos a cada parte del proceso, desde el subneteo, que se convierte en una tarea trivial, pasando por el direccionamiento dinámico, que es tan simple como permitir que cada host construya su propia dirección y reciba la información restante, hasta el enrutamiento, en cuyo caso solo hay que asignar los protocolos a las interfaces y dejar que hagan ellas el resto del trabajo.
 
 A su vez, queremos recalcar lo útil que es ver en acción todos los protocolos de red en una simulación más acercada a la realidad. Ver el funcionamiento detenido de un proceso de Tunneling, por poner un ejemplo, es de gran ayuda para entender la forma en la que se empaquetan los mensajes y se procesan a lo largo de la topología hasta ser desempaquetados una vez más.
+
+De igual manera, poder experimentar las configuraciones simultaneas de redes IPv4 con redes IPv6 nos permitio observar como trabajan estas dos en la actualidad y como, en un futuro, existira una mayor concentración de redes IPv6 que permitira el paso y la transformación de redes IPv4 a IPv6 de manera mucho más natural y sencilla 
 
