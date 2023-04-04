@@ -446,8 +446,6 @@ A continuación, las comprobaciones de las Access Lists en cada una de las Vlan�
 
 ![R2_ESP_PC6_ACCESS-LIST](/image/R2_ESP_PC6_ACCESS-LIST.jpg)
 
-## NAT 
-
 ## Enrutamiento
 
 En este laboratorio, el enrutamiento constaba de varias partes. Primeramente, era necesario identificar los protocolos que se nos requerían en cada uno de los routers:
